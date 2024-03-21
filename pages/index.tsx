@@ -15,7 +15,7 @@ import {
 import Head from "next/head";
 import { EllipsisOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { STATUS_FILTER } from "@/constants";
+import { STATUS_FILTER, STATUS_FILTER_VALUE } from "@/constants";
 import {
   createTodoItem,
   deleteTodoItem,
@@ -28,33 +28,31 @@ const { Title, Text } = Typography;
 
 export default function Home() {
   const [filter, setFilter] = useState<number>(0);
-  const [list, setList] = useState<ITodoResponse[]>();
+  const [list, setList] = useState<ITodoResponse[]>([]);
+  const [filteredTodos, setFilteredTodos] = useState<ITodoResponse[]>([]);
   const [text, setText] = useState<string>("");
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
   const [dataLoading, setDataLoading] = useState<boolean>(false);
   const [api, contextHolder] = notification.useNotification();
   const [progress, setProgress] = useState<number>(0);
 
-  console.log(list?.filter((task) => task.isDone === true).length);
-
   const filterOptions = [
     {
       label: STATUS_FILTER[0],
-      value: 0,
+      value: STATUS_FILTER_VALUE.ALL,
     },
     {
       label: STATUS_FILTER[1],
-      value: 1,
+      value: STATUS_FILTER_VALUE.DONE,
     },
     {
       label: STATUS_FILTER[2],
-      value: 2,
+      value: STATUS_FILTER_VALUE.UNDONE,
     },
   ];
 
   // TODO: Fix error handling.
   const fetchTodos = () => {
-    setDataLoading(true);
     fetchTodoList()
       .then((res) => {
         setList(res);
@@ -70,8 +68,22 @@ export default function Home() {
   };
 
   useEffect(() => {
+    setDataLoading(true);
     fetchTodos();
   }, []);
+
+  useEffect(() => {
+    if (!list) return;
+    let filteredList: ITodoResponse[] | undefined = list;
+    if (filter === STATUS_FILTER_VALUE.DONE) {
+      filteredList = list?.filter((task) => task.isDone === true);
+    } else if (filter === STATUS_FILTER_VALUE.UNDONE) {
+      filteredList = list?.filter((task) => task.isDone === false);
+    } else {
+      filteredList = list;
+    }
+    setFilteredTodos(filteredList);
+  }, [filter, list]);
 
   const handleAddTodo = () => {
     setSubmitLoading(true);
@@ -82,6 +94,7 @@ export default function Home() {
         setSubmitLoading(false);
       })
       .catch(() => {
+        setSubmitLoading(false);
         api.error({
           message: "Error",
           description: "Something went wrong. Please try again.",
@@ -92,8 +105,8 @@ export default function Home() {
 
   const handleCheckedStatus = (id: string) => {
     markUnmarkTodoItem(id)
-      .then((res) => {
-        console.log("mark res: ", res);
+      .then(() => {
+        fetchTodos();
       })
       .catch(() => {
         api.error({
@@ -119,7 +132,6 @@ export default function Home() {
       });
   };
 
-  // TODO: Update progress when a todo is checked/unchecked.
   useEffect(() => {
     const todoTotal = list?.length || 0;
     const doneTodo = list?.filter((task) => task.isDone === true).length || 0;
@@ -197,9 +209,9 @@ export default function Home() {
               </>
             ) : (
               <>
-                {list?.map((item: ITodoResponse, index: number) => (
+                {filteredTodos?.map((item: ITodoResponse) => (
                   <Flex
-                    key={index}
+                    key={item._id}
                     justify="space-between"
                     align="center"
                     className="bg-white h-12 rounded-3xl px-5"
