@@ -7,8 +7,8 @@ import {
   Input,
   Progress,
   Select,
-  Skeleton,
   Space,
+  Spin,
   Typography,
   notification,
 } from "antd";
@@ -51,7 +51,6 @@ export default function Home() {
     },
   ];
 
-  // TODO: Fix error handling.
   const fetchTodos = () => {
     fetchTodoList()
       .then((res) => {
@@ -61,7 +60,8 @@ export default function Home() {
       .catch(() => {
         api.error({
           message: "Error",
-          description: "Something went wrong. Please try again.",
+          description:
+            "There was a problem fetching data. Please refresh the page to try again.",
           duration: 0,
         });
       });
@@ -87,23 +87,33 @@ export default function Home() {
 
   const handleAddTodo = () => {
     setSubmitLoading(true);
-    createTodoItem({ text: text })
-      .then(() => {
-        setText("");
-        fetchTodos();
-        setSubmitLoading(false);
-      })
-      .catch(() => {
-        setSubmitLoading(false);
-        api.error({
-          message: "Error",
-          description: "Something went wrong. Please try again.",
-          duration: 0,
-        });
+    if (text === "") {
+      api.error({
+        message: "Please fill out the to-do field.",
+        duration: 2,
       });
+      setSubmitLoading(false);
+    } else {
+      createTodoItem({ text: text })
+        .then(() => {
+          setText("");
+          fetchTodos();
+          setSubmitLoading(false);
+        })
+        .catch(() => {
+          setSubmitLoading(false);
+          api.error({
+            message: "Error",
+            description:
+              "There was a problem with adding to-do item. Please try again.",
+            duration: 2,
+          });
+        });
+    }
   };
 
   const handleCheckedStatus = (id: string) => {
+    setDataLoading(true);
     markUnmarkTodoItem(id)
       .then(() => {
         fetchTodos();
@@ -111,8 +121,8 @@ export default function Home() {
       .catch(() => {
         api.error({
           message: "Error",
-          description: "Something went wrong. Please try again.",
-          duration: 0,
+          description: "Unable to update task. Please try again.",
+          duration: 2,
         });
       });
   };
@@ -126,8 +136,8 @@ export default function Home() {
       .catch(() => {
         api.error({
           message: "Error",
-          description: "Something went wrong. Please try again.",
-          duration: 0,
+          description: "Unable to delete task. Please try again.",
+          duration: 2,
         });
       });
   };
@@ -139,7 +149,6 @@ export default function Home() {
     setProgress((doneTodo / todoTotal) * 100);
   }, [list]);
 
-  // TODO: Code cleanup.
   return (
     <>
       <Head>
@@ -147,7 +156,7 @@ export default function Home() {
         <meta property="og:title" content="My page title" key="title" />
       </Head>
       {contextHolder}
-      <div className="h-svh px-2 py-20">
+      <div className="mih-svh p-2 md:py-20">
         <Card
           className={`w-full md:w-[720px] md:mx-auto bg-light-0
                       rounded-3xl md:px-14 md:py-8`}
@@ -189,26 +198,8 @@ export default function Home() {
                 Add
               </Button>
             </Flex>
-            {dataLoading ? (
-              <>
-                <Skeleton.Input
-                  active={dataLoading}
-                  size="large"
-                  className="w-full rounded-3xl h-12"
-                />
-                <Skeleton.Input
-                  active={dataLoading}
-                  size="large"
-                  className="w-full rounded-3xl h-12"
-                />
-                <Skeleton.Input
-                  active={dataLoading}
-                  size="large"
-                  className="w-full rounded-3xl h-12"
-                />
-              </>
-            ) : (
-              <>
+            <Spin spinning={dataLoading}>
+              <Space direction="vertical" className="w-full" size="middle">
                 {filteredTodos?.map((item: ITodoResponse) => (
                   <Flex
                     key={item._id}
@@ -243,7 +234,7 @@ export default function Home() {
                                 Delete
                               </Button>
                             ),
-                            key: "0",
+                            key: 0,
                           },
                         ],
                       }}
@@ -255,8 +246,8 @@ export default function Home() {
                     </Dropdown>
                   </Flex>
                 ))}
-              </>
-            )}
+              </Space>
+            </Spin>
           </Space>
         </Card>
       </div>
