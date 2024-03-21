@@ -220,7 +220,15 @@ export default function Home() {
                       onChange={() => handleCheckedStatus(item._id)}
                       defaultChecked={item.isDone}
                     >
-                      {item?.text}
+                      <Text
+                        className={`${
+                          item.isDone
+                            ? "text-grey-4 line-through"
+                            : "text-black"
+                        }`}
+                      >
+                        {item?.text}
+                      </Text>
                     </Checkbox>
                     <Dropdown
                       menu={{
